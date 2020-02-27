@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Document</title>
+  <!-- 导入页面的基本样式 -->
+  <link rel="stylesheet" href="./css/search.css" />
+  <!-- 导入 jQuery -->
+  <script src="./lib/jquery.js"></script>
+  <!-- 导入模板引擎 -->
+  <script src="./lib/template-web.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <img src="./images/taobao_logo.png" alt="" class="logo" />
+
+    <div class="box">
+      <!-- tab 栏 -->
+      <div class="tabs">
+        <div class="tab-active">宝贝</div>
+        <div>店铺</div>
+      </div>
+      <!-- 搜索区域（搜索框和搜索按钮） -->
+      <div class="search-box">
+        <input id="ipt" type="text" class="ipt" placeholder="请输入要搜索的内容" />
+        <button class="btnSearch">
+          搜索
+        </button>
+      </div>
+      <!-- 搜索建议列表 -->
+      <div id="suggest-list">
+        <div class="suggest-item">萝卜</div>
+        <div class="suggest-item">萝卜卜</div>
+      </div>
+    </div>
+  </div>
+  <script type="text/template" id="myTemp">
+  {{each result}}
+  <div class="suggest-item">{{$value[0]}}</div>
+  {{/each}}
+  </script>
+  <script>
+    var ipt = $('#ipt');
+    // 定义一个对象对搜索到的数据进行临时保存
+    // 进行请求之前，先检测是否对象里是否有数据，有就不请求了
+    var tempObj = {};
+    // 设置定时器，每隔10分钟清除一次临时对象
+    setInterval(function () {
+      tempObj = {};
+    }, 10 * 60 * 1000)
+
+
+    // 保存防抖定时器
+    var timer = null;
+
+    // 给输入框设置事件
+    ipt.on('keyup', function () {
+      clearTimeout(timer);
+      // 获取输入框的内容
+      var value = ipt.val().trim();
+
+      timer = setTimeout(function () {
+        processData(value);
+      }, 100)
+
+    });
+
+    // 对输入内容所有操作进行封装
+    function processData(value) {
+      // 内容为空的话就跳出
+      if (value === '') {
+        $('#suggest-list').hide();
+        return;
+      }
+
+      // 检测当前内容是否之前获取过
+      if (tempObj[value]) {
+        // 有临时存储的数据，就不用再请求了
+        jieGou(tempObj[value]);
+        return;
+      }
+
+      // 输入框有内容的话就向淘宝请求数据
+      $.ajax({
+        type: 'get',
+        url: 'https://suggest.taobao.com/sug',
+        data: {
+          q: value
+        },
+        // 跨域请求
+        dataType: 'jsonp',
+        success: function (res) {
+          // console.log(res);返回的是数组
+          jieGou(res);
+        }
+      })
+    }
+    function jieGou(res) {
+      // 数组里没东西就退出
+      if (res.result.length === 0) {
+        $('#suggest-list').hide();
+        return;
+      }
+      var htmlStr = template('myTemp', res);
+      $('#suggest-list').html(htmlStr).show();
+
+      // 将res存到临时对象中
+      tempObj[value] = res;
+    }
+
+
+
+
+  </script>
+</body>
+
+</html>
